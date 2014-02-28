@@ -32,10 +32,12 @@
         blob = new Blob([fr.result], {
           type: "image/jpeg"
         });
-        return JPEG.readExifMetaData(blob, function(err, exif) {
+        return JPEG.readExifMetaData(blob, function(err, meta) {
           ok = true;
-          return localforage.setItem("meta:" + file.name, exif, function() {
-            return cb(exif);
+          meta.filename = file.name;
+          meta.size = file.size;
+          return localforage.setItem("meta:" + file.name, meta, function() {
+            return cb(meta);
           });
         });
       };
@@ -90,8 +92,8 @@
       }
       file = files.pop();
       if (file.name.match(/\.jpg$/i)) {
-        getMeta(file, function(exif) {
-          return console.log(file.name, exif);
+        getMeta(file, function(meta) {
+          return console.log(file.name, meta);
         });
         return getThumb(file, function(thumb) {
           im.src = thumb;

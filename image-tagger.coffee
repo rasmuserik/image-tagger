@@ -16,10 +16,12 @@ getMeta = (file, cb) -> #{{{1
     fr.readAsArrayBuffer(file)
     fr.onload = ->
       blob = new Blob([fr.result], {type: "image/jpeg"})
-      JPEG.readExifMetaData blob, (err, exif) ->
+      JPEG.readExifMetaData blob, (err, meta) ->
         ok = true
-        localforage.setItem "meta:#{file.name}", exif, ->
-          cb exif
+        meta.filename = file.name
+        meta.size = file.size
+        localforage.setItem "meta:#{file.name}", meta, ->
+          cb meta
 
 getThumb = (file, cb) -> #{{{1
   localforage.getItem "thumb:#{file.name}", (result) ->
@@ -53,8 +55,8 @@ fileSelect = (e) -> #{{{1
     return done?()  if files.length == 0
     file = files.pop()
     if file.name.match /\.jpg$/i
-      getMeta file, (exif) ->
-        console.log file.name, exif
+      getMeta file, (meta) ->
+        console.log file.name, meta
       getThumb file, (thumb) ->
         im.src = thumb
         setTimeout (-> processFiles done), 0
