@@ -1,0 +1,26 @@
+{
+  "name": "image-tagger",
+  "version": "0.0.1",
+  "devDependencies": {
+    "reputil": "*"
+  },
+  "description": "thumbnail generator / image tagger",
+  "keywords": [],
+  "main": "index.html",
+  "author": ["Rasmus Erik Voel Jensen (solsort.com)"],
+  "scripts": {
+    "prepublish": "reputil build; git add image-tagger.js README.md",
+    "start": "nodewebkit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rasmuserik/image-tagger.git"
+  },
+  "dependencies": {
+  },
+  "testling": {
+    "html": "index.html",
+    "browsers": [
+    ]
+  }
+}

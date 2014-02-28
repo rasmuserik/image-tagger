@@ -1,0 +1,18 @@
+{
+  "name": "image-tagger",
+  "version": "0.0.1",
+  "description": "thumbnail generator / image tagger",
+  "keywords": [],
+  "authors": [
+    "Rasmus Erik Voel Jensen (solsort.com)"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rasmuserik/image-tagger.git"
+  },
+  "dependencies": {
+    "localforage": "*",
+    "pouchdb": "~1.1.0",
+    "exif": "*"
+  }
+}
