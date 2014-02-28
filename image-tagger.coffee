@@ -21,14 +21,19 @@ arrBufToStr = (arrBuf) ->
 
 
 
-size = 256*256
+size = 150
+
+t0 = Date.now()
+time = (desc) ->
+  t1 = Date.now()
+  console.log desc, t1 - t0
+  t0 = t1
 
 fileSelect = (e) ->
   files = []
   img = new Image()
   ctx = canvas.getContext "2d"
 
-  t0 = Date.now()
   processFiles = (done) ->
     return done?()  if files.length == 0
     file = files.pop()
@@ -36,22 +41,30 @@ fileSelect = (e) ->
       fr = new FileReader()
       fr.readAsArrayBuffer(file)
       fr.onload = ->
-        JPEG.readExifMetaData new Blob([fr.result], {type: "image/jpeg"}), (err, data) ->
+        time "readAsArrayBuffer"
+        blob = new Blob([fr.result], {type: "image/jpeg"})
+        time "newBlob"
+        JPEG.readExifMetaData blob, (err, exif) ->
+          time "readExif"
+          console.log exif.Orientation
           throw err if err
-
-          str = arrBufToStr fr.result
-          url = "data:image/jpeg;base64,#{btoa str}"
-          img.src = url
-          img.onload = ->
-            scale = Math.sqrt(size / img.width/img.height)
-            w = Math.round(img.width * scale)
-            h = Math.round(img.height * scale)
-            canvas.width = ctx.width = w
-            canvas.height = ctx.height = h
-            ctx.drawImage(img,0,0,w,h)
-            console.log "time:", Date.now() - t0
-            t0 = Date.now()
-            setTimeout (-> processFiles done), 0
+          fr.readAsDataURL(blob)
+          fr.onload = ->
+            time "readAsDataUrl"
+            img.src = fr.result
+            img.onload = ->
+              time "img.src=.."
+              scale = Math.sqrt(size*size / img.width/img.height)
+              w = Math.round(img.width * scale)
+              h = Math.round(img.height * scale)
+              canvas.width = ctx.width = w
+              canvas.height = ctx.height = h
+              ctx.drawImage(img,0,0,w,h)
+              time "drawImage"
+              thumb = canvas.toDataURL "image/jpeg", 0.8
+              localforage.setItem "thumb:#{file.name}", thumb, (err) ->
+                time "todataurl+savetodatabase"
+                setTimeout (-> processFiles done), 0
     else
       setTimeout (-> processFiles done), 0
 
