@@ -1,27 +1,5 @@
 #{{{1 setup
-dbGet = undefined
-dbSet = undefined
-
-do ->
-  db = undefined
-  req = indexedDB.open "keyvaluestore"
-  req.onerror = (e) -> throw e
-  req.onsuccess = (e) -> db = e
-
-
-
-
-arrBufToStr = (arrBuf) ->
-  step = 1000
-  arr = new Uint8Array arrBuf
-  res = []
-  for i in [0..arr.length-1] by step
-    res.push String.fromCharCode.apply null, [].slice.call arr, i, i+step
-  res.join ""
-
-
-
-size = 150
+size = 200
 
 t0 = Date.now()
 time = (desc) ->
@@ -29,7 +7,44 @@ time = (desc) ->
   console.log desc, t1 - t0
   t0 = t1
 
-fileSelect = (e) ->
+getMeta = (file, cb) -> #{{{1
+  localforage.getItem "meta:#{file.name}", (result) ->
+    return cb result if result
+    ok = false
+    setTimeout (-> cb null if !ok), 20000
+    fr = new FileReader()
+    fr.readAsArrayBuffer(file)
+    fr.onload = ->
+      blob = new Blob([fr.result], {type: "image/jpeg"})
+      JPEG.readExifMetaData blob, (err, exif) ->
+        ok = true
+        localforage.setItem "meta:#{file.name}", exif, ->
+          cb exif
+
+getThumb = (file, cb) -> #{{{1
+  localforage.getItem "thumb:#{file.name}", (result) ->
+    return cb result if result
+    fr = new FileReader()
+    cnv = document.createElement "canvas"
+    ctx = cnv.getContext "2d"
+    img = new Image()
+    fr.readAsDataURL file
+    fr.onerror = -> cb null
+    fr.onload = ->
+      img.src = fr.result
+      img.onerror = (err) -> cb null
+      img.onload = ->
+        scale = Math.sqrt(size*size / img.width/img.height)
+        w = Math.round(img.width * scale)
+        h = Math.round(img.height * scale)
+        cnv.width = ctx.width = w
+        cnv.height = ctx.height = h
+        ctx.drawImage(img,0,0,w,h)
+        thumb = cnv.toDataURL "image/jpeg", 0.8
+        localforage.setItem "thumb:#{file.name}", thumb, ->
+          cb thumb
+
+fileSelect = (e) -> #{{{1
   files = []
   img = new Image()
   ctx = canvas.getContext "2d"
@@ -38,45 +53,11 @@ fileSelect = (e) ->
     return done?()  if files.length == 0
     file = files.pop()
     if file.name.match /\.jpg$/i
-      fr = new FileReader()
-      fr.readAsArrayBuffer(file)
-      fr.onload = ->
-        time "readAsArrayBuffer"
-        blob = new Blob([fr.result], {type: "image/jpeg"})
-        time "newBlob"
-        ok = false
-        setTimeout (->
-          if !ok
-            console.log "timeout error, trying next", file.name
-            processFiles done
-        ), 20000
-        JPEG.readExifMetaData blob, (err, exif) ->
-          ok = true
-          time "readExif"
-          console.log exif.Orientation
-          if err
-            console.log err
-            return processFiles done
-          fr.readAsDataURL(blob)
-          fr.onload = ->
-            time "readAsDataUrl"
-            img.src = fr.result
-            img.onerror = (err) ->
-              console.log err
-              processFiles done
-            img.onload = ->
-              time "img.src=.."
-              scale = Math.sqrt(size*size / img.width/img.height)
-              w = Math.round(img.width * scale)
-              h = Math.round(img.height * scale)
-              canvas.width = ctx.width = w
-              canvas.height = ctx.height = h
-              ctx.drawImage(img,0,0,w,h)
-              time "drawImage"
-              thumb = canvas.toDataURL "image/jpeg", 0.8
-              localforage.setItem "thumb:#{file.name}", thumb, (err) ->
-                time "todataurl+savetodatabase"
-                setTimeout (-> processFiles done), 0
+      getMeta file, (exif) ->
+        console.log file.name, exif
+      getThumb file, (thumb) ->
+        im.src = thumb
+        setTimeout (-> processFiles done), 0
     else
       setTimeout (-> processFiles done), 0
 
@@ -84,4 +65,4 @@ fileSelect = (e) ->
     files.push file
   processFiles()
 
-document.getElementById("getfile").addEventListener "change", fileSelect
+document.getElementById("getfile").addEventListener "change", fileSelect #{{{1
