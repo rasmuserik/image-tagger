@@ -44,14 +44,26 @@ fileSelect = (e) ->
         time "readAsArrayBuffer"
         blob = new Blob([fr.result], {type: "image/jpeg"})
         time "newBlob"
+        ok = false
+        setTimeout (->
+          if !ok
+            console.log "timeout error, trying next", file.name
+            processFiles done
+        ), 20000
         JPEG.readExifMetaData blob, (err, exif) ->
+          ok = true
           time "readExif"
           console.log exif.Orientation
-          throw err if err
+          if err
+            console.log err
+            return processFiles done
           fr.readAsDataURL(blob)
           fr.onload = ->
             time "readAsDataUrl"
             img.src = fr.result
+            img.onerror = (err) ->
+              console.log err
+              processFiles done
             img.onload = ->
               time "img.src=.."
               scale = Math.sqrt(size*size / img.width/img.height)

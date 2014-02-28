@@ -55,22 +55,35 @@
         fr = new FileReader();
         fr.readAsArrayBuffer(file);
         return fr.onload = function() {
-          var blob;
+          var blob, ok;
           time("readAsArrayBuffer");
           blob = new Blob([fr.result], {
             type: "image/jpeg"
           });
           time("newBlob");
+          ok = false;
+          setTimeout((function() {
+            if (!ok) {
+              console.log("timeout error, trying next", file.name);
+              return processFiles(done);
+            }
+          }), 20000);
           return JPEG.readExifMetaData(blob, function(err, exif) {
+            ok = true;
             time("readExif");
             console.log(exif.Orientation);
             if (err) {
-              throw err;
+              console.log(err);
+              return processFiles(done);
             }
             fr.readAsDataURL(blob);
             return fr.onload = function() {
               time("readAsDataUrl");
               img.src = fr.result;
+              img.onerror = function(err) {
+                console.log(err);
+                return processFiles(done);
+              };
               return img.onload = function() {
                 var h, scale, thumb, w;
                 time("img.src=..");
