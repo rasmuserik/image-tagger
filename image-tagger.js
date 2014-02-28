@@ -32,10 +32,11 @@
   size = 256 * 256;
 
   fileSelect = function(e) {
-    var ctx, file, files, img, processFiles, _i, _len, _ref;
+    var ctx, file, files, img, processFiles, t0, _i, _len, _ref;
     files = [];
     img = new Image();
     ctx = canvas.getContext("2d");
+    t0 = Date.now();
     processFiles = function(done) {
       var file, fr;
       if (files.length === 0) {
@@ -46,22 +47,15 @@
         fr = new FileReader();
         fr.readAsArrayBuffer(file);
         return fr.onload = function() {
-          var str, t0, url;
-          console.log(file);
-          /*
-          JPEG.readExifMetaData new Blob([fr.result], {type: "image/jpeg"}), (err, data) ->
-            throw err if err
-            undefined
-          */
-
-          if (true) {
-            t0 = Date.now();
+          return JPEG.readExifMetaData(new Blob([fr.result], {
+            type: "image/jpeg"
+          }), function(err, data) {
+            var str, url;
+            if (err) {
+              throw err;
+            }
             str = arrBufToStr(fr.result);
-            console.log(Date.now() - t0);
-            t0 = Date.now();
             url = "data:image/jpeg;base64," + (btoa(str));
-            console.log(Date.now() - t0);
-            console.log(url);
             img.src = url;
             return img.onload = function() {
               var h, scale, w;
@@ -71,11 +65,13 @@
               canvas.width = ctx.width = w;
               canvas.height = ctx.height = h;
               ctx.drawImage(img, 0, 0, w, h);
+              console.log("time:", Date.now() - t0);
+              t0 = Date.now();
               return setTimeout((function() {
                 return processFiles(done);
               }), 0);
             };
-          }
+          });
         };
       } else {
         return setTimeout((function() {

@@ -28,6 +28,7 @@ fileSelect = (e) ->
   img = new Image()
   ctx = canvas.getContext "2d"
 
+  t0 = Date.now()
   processFiles = (done) ->
     return done?()  if files.length == 0
     file = files.pop()
@@ -35,21 +36,11 @@ fileSelect = (e) ->
       fr = new FileReader()
       fr.readAsArrayBuffer(file)
       fr.onload = ->
-        console.log file
-        ###
         JPEG.readExifMetaData new Blob([fr.result], {type: "image/jpeg"}), (err, data) ->
           throw err if err
-          undefined
-          ###
 
-        if true
-          t0 = Date.now()
           str = arrBufToStr fr.result
-          console.log Date.now() - t0
-          t0 = Date.now()
           url = "data:image/jpeg;base64,#{btoa str}"
-          console.log Date.now() - t0
-          console.log url
           img.src = url
           img.onload = ->
             scale = Math.sqrt(size / img.width/img.height)
@@ -58,6 +49,8 @@ fileSelect = (e) ->
             canvas.width = ctx.width = w
             canvas.height = ctx.height = h
             ctx.drawImage(img,0,0,w,h)
+            console.log "time:", Date.now() - t0
+            t0 = Date.now()
             setTimeout (-> processFiles done), 0
     else
       setTimeout (-> processFiles done), 0
